@@ -470,3 +470,26 @@ select:focus {
     text-align: left;
   }
 }
+
+.chart-card {
+  background: white;
+  padding: 28px;
+  border-radius: 32px;
+  border: 2px solid #ffe1ee;
+  box-shadow: var(--shadow);
+  min-height: 430px;
+}
+
+.chart-card h2 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.chart-card canvas {
+  max-height: 330px;
+}
+
+.history-section {
+  width: min(1100px, 92%);
+  margin: 0 auto 70px;
+}
