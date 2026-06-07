@@ -14,88 +14,45 @@
 
   <section class="page-header">
     <p class="badge">Saving Box</p>
-    <h1>My Money Box</h1>
-    <p>Set your saving goal and track your money box progress.</p>
+    <h1>My Money Boxes</h1>
+    <p>Create many saving boxes and track each goal progress.</p>
   </section>
 
   <section class="money-box-section">
 
-    <div class="money-box-card">
-      <div class="money-box-icon">👛</div>
-      <h2 id="goalNameDisplay">My Saving Box</h2>
-
-      <div class="progress-circle">
-        <div>
-          <h3 id="progressPercent">0%</h3>
-          <p>Saved</p>
-        </div>
-      </div>
-
-      <h1 id="savedAmountDisplay">RM 0.00</h1>
-      <p id="targetAmountDisplay">Target: RM 0.00</p>
-
-      <div class="progress-bar">
-        <div id="progressFill"></div>
-      </div>
-    </div>
-
     <div class="form-card">
-      <h2>Set Saving Goal</h2>
+      <h2>Create New Money Box</h2>
 
-      <form id="goalForm">
-        <label>Goal Name</label>
-        <input type="text" id="goalName" placeholder="Example: New Laptop" required />
+      <form id="boxForm">
+        <label>Box Name</label>
+        <input type="text" id="boxName" placeholder="Example: New Laptop" required />
 
         <label>Target Amount (RM)</label>
         <input type="number" id="targetAmount" placeholder="Example: 2000" min="1" step="0.01" required />
 
-        <button type="submit" class="btn-primary full">Save Goal</button>
+        <button type="submit" class="btn-primary full">Create Money Box</button>
       </form>
+    </div>
 
-      <hr class="cute-line" />
-
-      <h2>Add Money</h2>
+    <div class="form-card">
+      <h2>Add Saving</h2>
 
       <form id="savingForm">
+        <label>Choose Money Box</label>
+        <select id="boxSelect" required></select>
+
         <label>Saving Amount (RM)</label>
         <input type="number" id="savingAmount" placeholder="Example: 50" min="1" step="0.01" required />
 
-        <button type="submit" class="btn-primary full">Add to Money Box</button>
+        <button type="submit" class="btn-primary full">Add Money</button>
       </form>
-
-      <button id="resetFundBtn" class="btn-danger full">Reset Money Box</button>
     </div>
 
   </section>
 
-  <section class="saving-tips">
-    <h2>Saving Tips 🌷</h2>
-
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="icon">💗</div>
-        <h3>Save Weekly</h3>
-        <p>Try to save a small amount every week to reach your goal faster.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="icon">☕</div>
-        <h3>Cut Small Spending</h3>
-        <p>Reduce unnecessary spending like snacks or drinks when needed.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="icon">🎯</div>
-        <h3>Focus on Goal</h3>
-        <p>Set a clear target so you feel motivated to save money.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="icon">📌</div>
-        <h3>Track Progress</h3>
-        <p>Update your money box every time you add savings.</p>
-      </div>
-    </div>
+  <section class="money-box-list-section">
+    <h2>My Saving Boxes 👛</h2>
+    <div id="moneyBoxList" class="money-box-list"></div>
   </section>
 
   <div id="footer"></div>
@@ -109,92 +66,140 @@
       .then(response => response.text())
       .then(data => document.getElementById("footer").innerHTML = data);
 
-    const goalForm = document.getElementById("goalForm");
+    const boxForm = document.getElementById("boxForm");
     const savingForm = document.getElementById("savingForm");
 
-    const goalNameInput = document.getElementById("goalName");
+    const boxNameInput = document.getElementById("boxName");
     const targetAmountInput = document.getElementById("targetAmount");
+    const boxSelect = document.getElementById("boxSelect");
     const savingAmountInput = document.getElementById("savingAmount");
+    const moneyBoxList = document.getElementById("moneyBoxList");
 
-    const goalNameDisplay = document.getElementById("goalNameDisplay");
-    const savedAmountDisplay = document.getElementById("savedAmountDisplay");
-    const targetAmountDisplay = document.getElementById("targetAmountDisplay");
-    const progressPercent = document.getElementById("progressPercent");
-    const progressFill = document.getElementById("progressFill");
-    const resetFundBtn = document.getElementById("resetFundBtn");
+    let moneyBoxes = JSON.parse(localStorage.getItem("moneyBoxes")) || [];
 
-    let fund = JSON.parse(localStorage.getItem("moneyBox")) || {
-      goalName: "My Saving Box",
-      targetAmount: 0,
-      savedAmount: 0
-    };
-
-    function saveFund() {
-      localStorage.setItem("moneyBox", JSON.stringify(fund));
+    function saveMoneyBoxes() {
+      localStorage.setItem("moneyBoxes", JSON.stringify(moneyBoxes));
     }
 
     function formatMoney(amount) {
       return "RM " + Number(amount).toFixed(2);
     }
 
-    function updateMoneyBox() {
-      goalNameDisplay.textContent = fund.goalName;
-      savedAmountDisplay.textContent = formatMoney(fund.savedAmount);
-      targetAmountDisplay.textContent = "Target: " + formatMoney(fund.targetAmount);
+    function renderBoxOptions() {
+      boxSelect.innerHTML = "";
 
-      let percent = 0;
-
-      if (fund.targetAmount > 0) {
-        percent = (fund.savedAmount / fund.targetAmount) * 100;
+      if (moneyBoxes.length === 0) {
+        boxSelect.innerHTML = `<option value="">No money box yet</option>`;
+        return;
       }
 
-      if (percent > 100) {
-        percent = 100;
-      }
-
-      progressPercent.textContent = Math.round(percent) + "%";
-      progressFill.style.width = percent + "%";
+      moneyBoxes.forEach(box => {
+        const option = document.createElement("option");
+        option.value = box.id;
+        option.textContent = box.name;
+        boxSelect.appendChild(option);
+      });
     }
 
-    goalForm.addEventListener("submit", function(event) {
+    function renderMoneyBoxes() {
+      moneyBoxList.innerHTML = "";
+
+      if (moneyBoxes.length === 0) {
+        moneyBoxList.innerHTML = `<p class="empty">No money box created yet 🌷</p>`;
+        renderBoxOptions();
+        return;
+      }
+
+      moneyBoxes.forEach(box => {
+        let percent = 0;
+
+        if (box.targetAmount > 0) {
+          percent = (box.savedAmount / box.targetAmount) * 100;
+        }
+
+        if (percent > 100) {
+          percent = 100;
+        }
+
+        const degree = (percent / 100) * 360;
+
+        const card = document.createElement("div");
+        card.className = "money-box-card";
+
+        card.innerHTML = `
+          <div class="money-box-icon">👛</div>
+
+          <h2>${box.name}</h2>
+
+          <div class="progress-circle" style="background: conic-gradient(#ff9ecb ${degree}deg, #ffe1ee ${degree}deg);">
+            <div>
+              <h3>${Math.round(percent)}%</h3>
+              <p>Saved</p>
+            </div>
+          </div>
+
+          <h1>${formatMoney(box.savedAmount)}</h1>
+          <p>Target: ${formatMoney(box.targetAmount)}</p>
+
+          <div class="progress-bar">
+            <div style="width: ${percent}%"></div>
+          </div>
+
+          <button class="btn-danger full" onclick="deleteMoneyBox(${box.id})">Delete Box</button>
+        `;
+
+        moneyBoxList.appendChild(card);
+      });
+
+      renderBoxOptions();
+    }
+
+    function deleteMoneyBox(id) {
+      if (confirm("Are you sure you want to delete this money box?")) {
+        moneyBoxes = moneyBoxes.filter(box => box.id !== id);
+        saveMoneyBoxes();
+        renderMoneyBoxes();
+      }
+    }
+
+    boxForm.addEventListener("submit", function(event) {
       event.preventDefault();
 
-      fund.goalName = goalNameInput.value.trim();
-      fund.targetAmount = Number(targetAmountInput.value);
+      const newBox = {
+        id: Date.now(),
+        name: boxNameInput.value.trim(),
+        targetAmount: Number(targetAmountInput.value),
+        savedAmount: 0
+      };
 
-      saveFund();
-      updateMoneyBox();
+      moneyBoxes.push(newBox);
+      saveMoneyBoxes();
 
-      goalForm.reset();
+      boxForm.reset();
+      renderMoneyBoxes();
     });
 
     savingForm.addEventListener("submit", function(event) {
       event.preventDefault();
 
-      const amount = Number(savingAmountInput.value);
+      const selectedBoxId = Number(boxSelect.value);
+      const savingAmount = Number(savingAmountInput.value);
 
-      fund.savedAmount += amount;
+      const selectedBox = moneyBoxes.find(box => box.id === selectedBoxId);
 
-      saveFund();
-      updateMoneyBox();
-
-      savingForm.reset();
-    });
-
-    resetFundBtn.addEventListener("click", function() {
-      if (confirm("Are you sure you want to reset your money box?")) {
-        fund = {
-          goalName: "My Saving Box",
-          targetAmount: 0,
-          savedAmount: 0
-        };
-
-        saveFund();
-        updateMoneyBox();
+      if (!selectedBox) {
+        alert("Please create a money box first.");
+        return;
       }
+
+      selectedBox.savedAmount += savingAmount;
+
+      saveMoneyBoxes();
+      savingForm.reset();
+      renderMoneyBoxes();
     });
 
-    updateMoneyBox();
+    renderMoneyBoxes();
   </script>
 
 </body>
