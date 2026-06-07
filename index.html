@@ -12,67 +12,74 @@
 
   <div id="navbar"></div>
 
-  <section class="hero">
-    <div class="hero-content">
-      <p class="badge">Cute Money Tracker</p>
-      <h1>Manage Your Money Easily</h1>
-      <p>
-        ExpenseTracker helps you record income, expenses and balance
-        in a simple and adorable way.
-      </p>
+  <section class="page-header">
+    <p class="badge">Daily Expense Tracker</p>
+    <h1>Track Your Expenses</h1>
+    <p>Add income and expenses, view your balance, and download your transaction history.</p>
+  </section>
 
-      <div class="hero-buttons">
-        <a href="funds.html" class="btn-primary">Start Tracking</a>
-        <a href="#features" class="btn-secondary">View Features</a>
-      </div>
+  <section class="summary">
+    <div class="summary-card balance">
+      <p>Total Balance</p>
+      <h2 id="balance">RM 0.00</h2>
     </div>
 
-    <div class="hero-card">
-      <h2>Today’s Balance</h2>
-      <h1>RM 0.00</h1>
-      <p>Start adding your income and expenses now!</p>
-      <div class="cute-wallet">👛</div>
+    <div class="summary-card income">
+      <p>Total Income</p>
+      <h2 id="income">RM 0.00</h2>
+    </div>
+
+    <div class="summary-card expense">
+      <p>Total Expense</p>
+      <h2 id="expense">RM 0.00</h2>
     </div>
   </section>
 
-  <section class="features" id="features">
-    <h2>Why Use ExpenseTracker?</h2>
+  <section class="tracker-layout">
 
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="icon">🌸</div>
-        <h3>Cute Design</h3>
-        <p>A soft and friendly interface suitable for daily money tracking.</p>
-      </div>
+    <div class="form-card">
+      <h2>Add Transaction</h2>
 
-      <div class="feature-card">
-        <div class="icon">💰</div>
-        <h3>Track Income</h3>
-        <p>Record your allowance, salary, side income or savings easily.</p>
-      </div>
+      <form id="transactionForm">
+        <label>Transaction Name</label>
+        <input type="text" id="title" placeholder="Example: Food, Salary" required />
 
-      <div class="feature-card">
-        <div class="icon">🛍️</div>
-        <h3>Track Expenses</h3>
-        <p>Monitor your spending for food, transport, shopping and more.</p>
-      </div>
+        <label>Amount (RM)</label>
+        <input type="number" id="amount" placeholder="Example: 25" min="1" step="0.01" required />
 
-      <div class="feature-card">
-        <div class="icon">📊</div>
-        <h3>View Balance</h3>
-        <p>Automatically calculate your total income, expenses and balance.</p>
-      </div>
+        <label>Type</label>
+        <select id="type" required>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+
+        <label>Category</label>
+        <select id="category" required>
+          <option value="Salary">Salary</option>
+          <option value="Allowance">Allowance</option>
+          <option value="Food">Food</option>
+          <option value="Transport">Transport</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Bills">Bills</option>
+          <option value="Education">Education</option>
+          <option value="Others">Others</option>
+        </select>
+
+        <label>Date</label>
+        <input type="date" id="date" required />
+
+        <button type="submit" class="btn-primary full">Add Transaction</button>
+      </form>
+
+      <button id="downloadBtn" class="btn-secondary full">Download History CSV</button>
+      <button id="clearBtn" class="btn-danger full">Clear All</button>
     </div>
-  </section>
 
-  <section class="about-box">
-    <h2>About This Project</h2>
-    <p>
-      ExpenseTracker is a simple personal finance web application developed
-      using HTML, CSS and JavaScript. This project is suitable to showcase
-      basic frontend development, DOM manipulation and local storage skills
-      for internship applications.
-    </p>
+    <div class="history-card">
+      <h2>Transaction History</h2>
+      <div id="transactionList"></div>
+    </div>
+
   </section>
 
   <div id="footer"></div>
@@ -80,15 +87,154 @@
   <script>
     fetch("navbar.html")
       .then(response => response.text())
-      .then(data => {
-        document.getElementById("navbar").innerHTML = data;
-      });
+      .then(data => document.getElementById("navbar").innerHTML = data);
 
     fetch("footer.html")
       .then(response => response.text())
-      .then(data => {
-        document.getElementById("footer").innerHTML = data;
+      .then(data => document.getElementById("footer").innerHTML = data);
+
+    const form = document.getElementById("transactionForm");
+    const titleInput = document.getElementById("title");
+    const amountInput = document.getElementById("amount");
+    const typeInput = document.getElementById("type");
+    const categoryInput = document.getElementById("category");
+    const dateInput = document.getElementById("date");
+
+    const balanceEl = document.getElementById("balance");
+    const incomeEl = document.getElementById("income");
+    const expenseEl = document.getElementById("expense");
+    const transactionList = document.getElementById("transactionList");
+
+    const downloadBtn = document.getElementById("downloadBtn");
+    const clearBtn = document.getElementById("clearBtn");
+
+    let transactions = JSON.parse(localStorage.getItem("expenseTransactions")) || [];
+
+    dateInput.valueAsDate = new Date();
+
+    function saveData() {
+      localStorage.setItem("expenseTransactions", JSON.stringify(transactions));
+    }
+
+    function formatMoney(amount) {
+      return "RM " + Number(amount).toFixed(2);
+    }
+
+    function addTransaction(event) {
+      event.preventDefault();
+
+      const transaction = {
+        id: Date.now(),
+        title: titleInput.value.trim(),
+        amount: Number(amountInput.value),
+        type: typeInput.value,
+        category: categoryInput.value,
+        date: dateInput.value
+      };
+
+      transactions.push(transaction);
+      saveData();
+
+      form.reset();
+      dateInput.valueAsDate = new Date();
+
+      displayTransactions();
+      updateSummary();
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(item => item.id !== id);
+      saveData();
+      displayTransactions();
+      updateSummary();
+    }
+
+    function displayTransactions() {
+      transactionList.innerHTML = "";
+
+      if (transactions.length === 0) {
+        transactionList.innerHTML = `<p class="empty">No transaction yet 🌷</p>`;
+        return;
+      }
+
+      const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sortedTransactions.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "transaction-item";
+
+        const sign = item.type === "income" ? "+" : "-";
+        const amountClass = item.type === "income" ? "green" : "red";
+
+        div.innerHTML = `
+          <div>
+            <h3>${item.title}</h3>
+            <p>${item.category} • ${item.date}</p>
+          </div>
+
+          <div class="transaction-right">
+            <h3 class="${amountClass}">${sign} ${formatMoney(item.amount)}</h3>
+            <button onclick="deleteTransaction(${item.id})">Delete</button>
+          </div>
+        `;
+
+        transactionList.appendChild(div);
       });
+    }
+
+    function updateSummary() {
+      const income = transactions
+        .filter(item => item.type === "income")
+        .reduce((total, item) => total + item.amount, 0);
+
+      const expense = transactions
+        .filter(item => item.type === "expense")
+        .reduce((total, item) => total + item.amount, 0);
+
+      const balance = income - expense;
+
+      incomeEl.textContent = formatMoney(income);
+      expenseEl.textContent = formatMoney(expense);
+      balanceEl.textContent = formatMoney(balance);
+    }
+
+    function downloadCSV() {
+      if (transactions.length === 0) {
+        alert("No transaction history to download.");
+        return;
+      }
+
+      let csv = "Title,Amount,Type,Category,Date\n";
+
+      transactions.forEach(item => {
+        csv += `"${item.title}",${item.amount},${item.type},${item.category},${item.date}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "expense-history.csv";
+      link.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    clearBtn.addEventListener("click", function () {
+      if (confirm("Are you sure you want to clear all transactions?")) {
+        transactions = [];
+        saveData();
+        displayTransactions();
+        updateSummary();
+      }
+    });
+
+    form.addEventListener("submit", addTransaction);
+    downloadBtn.addEventListener("click", downloadCSV);
+
+    displayTransactions();
+    updateSummary();
   </script>
 
 </body>
